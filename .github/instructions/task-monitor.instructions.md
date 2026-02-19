@@ -41,6 +41,19 @@ Copilot and human-edit policy
 - Any PR that modifies `./tmp/task-monitor.md` must only add new lines; changes to existing lines will be rejected.
 - When generating code that writes to `task-monitor.md`, implement the lock/retry/verify pattern described above.
 
+Task pickup & lifecycle (directory rules)
+- Task source directory: agents MUST only pick up task files from `./tmp/task` unless explicitly configured otherwise.
+- Skip rule: before picking a task, check `task-monitor.md` for the task's most recent entry; do NOT pick a task whose last recorded status is `active` or `failed`.
+- Task identity: treat the task file's basename (filename without extension) as the `<task name>` used in `task-monitor.md` entries.
+- Start sequence: when beginning work on a picked task, append a `started` event for the task (owner/agent id | <task name> | started, short reason) and then append `active` when processing begins.
+- Failures: if processing fails, append a `failed` event with an informative message (include error context). Do not remove or rename the task file on failure.
+- Pause for user: if the task requires user input, append `paused` and halt processing until explicit user action/resume is recorded in `task-monitor.md`.
+- Completion and move: on successful completion, append a `complete` event and then atomically move the task file from `./tmp/task` to `./tmp/task-complete` (use rename/move to preserve atomicity). After move, re-read `task-monitor.md` tail and verify the `complete` entry and that the file exists in `./tmp/task-complete`.
+- Idempotency & safety: if the file is already in `./tmp/task-complete` or a `complete` line already exists, do not append duplicate `complete` events or re-move the file.
+- Directory existence: ensure `./tmp/task-complete` exists (create if missing) before attempting the move; creation should be non-blocking and retry-on-failure.
+- Auditability: always append status transitions to `task-monitor.md` (never edit previous lines) so that the lifecycle (started → active → paused/failed → complete) is fully recorded.
+
+
 Examples
 - agent-1 | data-sync | started, Scheduling sync for bucket A
 - agent-1 | data-sync | active, Processing batch #7
