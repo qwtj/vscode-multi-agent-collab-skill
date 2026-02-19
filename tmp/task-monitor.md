@@ -19,3 +19,9 @@ Sample entries
 - scheduler | nightly-backup | paused, Waiting for resource quota
 
 Append-only rules are enforced by the workspace instructions file: `.github/instructions/task-monitor.instructions.md`.
+
+agent-1 | task 1 | started, Picked up `task 1.md` to summarize Copilot customization
+agent-1 | task 1 | active, Generating summary and bullet list for Copilot customization docs
+agent-1 | task 1 | complete, Created `copilot-customization-task-1.md` and moved original file to `tmp/task-complete/`
+
+---TASK LIST---
