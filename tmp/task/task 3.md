@@ -1,0 +1,2 @@
+- https://code.visualstudio.com/blogs/2025/10/22/bring-your-own-key
+- summarize and create a list then write out to ./<short name - task id>.md

@@ -1,0 +1,2 @@
+- https://code.visualstudio.com/blogs/2026/02/05/multi-agent-development
+- summarize and create a list then write out to ./<short name - task id>.md
