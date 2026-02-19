@@ -3,6 +3,8 @@
 Purpose
 - Provide repository-wide guidelines and defaults that apply to every Copilot / agent session.
 
+Pick a random uuid at the start of a cnoversation.
+
 Key rules (short)
 - Follow project conventions and safety rules in file-based instructions when present.
 - Prefer immutable, append-only records for audit logs (see `./tmp/task-monitor.instructions.md`).

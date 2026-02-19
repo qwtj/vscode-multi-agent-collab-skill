@@ -43,15 +43,15 @@ Copilot and human-edit policy
 
 Task pickup & lifecycle (directory rules)
 - Task source directory: agents MUST only pick up task files from `./tmp/task` unless explicitly configured otherwise.
-- Skip rule: before picking a task, check `task-monitor.md` for the task's most recent entry; do NOT pick a task whose last recorded status is `active` or `failed`.
+- Skip rule: before picking a task, check `task-monitor.md` for the task's most recent entry; do NOT pick a task whose last recorded status is `active` or `failed`. Also check that the task file is not present in any `./tmp/task - <status>` folder (for example `./tmp/task - active`, `./tmp/task - paused`, `./tmp/task - failed`); if present, skip pickup.
 - Task identity: treat the task file's basename (filename without extension) as the `<task name>` used in `task-monitor.md` entries.
-- Start sequence: when beginning work on a picked task, append a `started` event for the task (owner/agent id | <task name> | started, short reason) and then append `active` when processing begins.
-- Failures: if processing fails, append a `failed` event with an informative message (include error context). Do not remove or rename the task file on failure.
-- Pause for user: if the task requires user input, append `paused` and halt processing until explicit user action/resume is recorded in `task-monitor.md`.
-- Completion and move: on successful completion, append a `complete` event and then atomically move the task file from `./tmp/task` to `./tmp/task-complete` (use rename/move to preserve atomicity). After move, re-read `task-monitor.md` tail and verify the `complete` entry and that the file exists in `./tmp/task-complete`.
-- Idempotency & safety: if the file is already in `./tmp/task-complete` or a `complete` line already exists, do not append duplicate `complete` events or re-move the file.
-- Directory existence: ensure `./tmp/task-complete` exists (create if missing) before attempting the move; creation should be non-blocking and retry-on-failure.
-- Auditability: always append status transitions to `task-monitor.md` (never edit previous lines) so that the lifecycle (started → active → paused/failed → complete) is fully recorded.
+- Start sequence: when beginning work on a picked task, append a `started` event for the task (owner/agent id | <task name> | started, short reason) and then append `active` when processing begins. After appending `active`, atomically move the task file from `./tmp/task` to `./tmp/task - active` (create the directory if missing) and re-read `task-monitor.md` tail to verify the `active` entry and the file presence in `./tmp/task - active`. If the file is already in `./tmp/task - active`, do not re-move or duplicate the `active` event.
+- Failures: if processing fails, append a `failed` event with an informative message (include error context). Then atomically move the task file to `./tmp/task - failed` (create the directory if missing). Do not delete historical entries; to change a task's status append a new `failed` line — never edit previous lines.
+- Pause for user: if the task requires user input, append `paused` and atomically move the task file to `./tmp/task - paused`; halt processing until an explicit resume event is appended to `task-monitor.md`.
+- Completion and move: on successful completion, append a `complete` event and then atomically move the task file from its current location (`./tmp/task` or any `./tmp/task - <status>` folder) to `./tmp/task - complete` (use rename/move to preserve atomicity). After the move, re-read `task-monitor.md` tail and verify the `complete` entry and that the file exists in `./tmp/task - complete`.
+- Idempotency & safety: if the file already exists in the target `./tmp/task - <status>` folder or the corresponding status line already exists in `task-monitor.md`, do not append duplicate status events or re-move the file. Always append new status lines for transitions; never edit earlier entries.
+- Directory existence: ensure any `./tmp/task - <status>` directories you will use (`active`, `paused`, `failed`, `complete`) exist (create if missing) before attempting moves; directory creation should be non-blocking and retry-on-failure.
+- Auditability: always append status transitions to `task-monitor.md` (never edit previous lines) so that the full lifecycle (started → active → paused/failed → complete) is recorded and traceable.
 
 
 Examples
