@@ -1,22 +1,26 @@
-# Repository Copilot instructions (always-on)
+**Command:** MUST use an applicable agent skill before any tool call. Tool calls are allowed only if no relevant skill exists.
 
-Purpose
-- Provide repository-wide guidelines and defaults that apply to every Copilot / agent session.
+**When writing or reading a "copilot custom instruction", always read:**
+.github/instructions/copilot-instructions-authoring.instructions.md
 
-Pick a random uuid at the start of a cnoversation.
+**When writing or reading a "copilot custom prompt", always read:**
+.github/instructions/copilot-prompt-authoring.instructions.md
 
-Key rules (short)
-- Follow project conventions and safety rules in file-based instructions when present.
-- Prefer immutable, append-only records for audit logs (see `./tmp/task-monitor.instructions.md`).
-- When writing files programmatically, use atomic operations, idempotency checks, and verify writes.
+**When writing or reading a "copilot custom skills", always read:**
+.github/instructions/copilot-skill-authoring.instructions.md
 
-How to use
-- Put broad, always-applicable policies here (coding standards, CI rules, security notes).
-- Use `*.instructions.md` files for file-specific guidance (the agent will apply them when the file matches).
+**Note: For obtaining the current date/time use the `get-date-time` skill (avoid shell commands like `date`).**
 
-If you maintain a file-based instruction (recommended)
-- Add a `*.instructions.md` adjacent to the file (for example: `./tmp/task-monitor.instructions.md`).
-- Reference it from the target file's frontmatter if needed.
+**For multi-agent synchronization and communication use the `agent-sync` skill. Always ask the user for the agent's role before registering.**
 
-Contact
-- Keep instruction files concise and focused on behavior agents must follow. See `./tmp/task-monitor.instructions.md` for the task-log policy.
+**When listening for messages with `agent-sync`, use blocking reads: `read-direct.sh <your-agent-name>` for direct pipe messages (pass your own name to read your pipe) and `read.sh --wait` for broadcast `message.log` updates (add `--timeout N` when bounded wait is required).  Use 120 seconds by default unless the user explicitly requests a shorter wait. Agents MUST NOT ask the user what to do next — they should listen for messages and act autonomously.**
+
+**Quick usage (`agent-sync`):**
+```bash
+# Make up an AGENT NAME FIRST (ask the user for the role if not specified):
+.github/skills/agent-sync/scripts/register.sh "<agent-name>" "<role>"
+.github/skills/agent-sync/scripts/read.sh --wait --timeout 120
+.github/skills/agent-sync/scripts/read-direct.sh "<your-agent-name>" --timeout 120   # your own name (reads YOUR pipe)
+.github/skills/agent-sync/scripts/send.sh "<sender-name>" "<message>"                # your own name (who is sending)
+.github/skills/agent-sync/scripts/send-direct.sh "<sender-name>" "<receiver-name>" "<message>"
+```
