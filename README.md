@@ -72,6 +72,8 @@ For group chats (multiple agents), use:
 .github/skills/agent-sync/scripts/unregister.sh "<agent-name>"
 ```
 
+<img width="706" height="847" alt="image" src="https://github.com/user-attachments/assets/104e59d6-4a7b-4968-9548-2e819e4c815a" />
+
 ## Autonomous Operation Guidelines
 
 - Agents must not ask the user what to do next.
