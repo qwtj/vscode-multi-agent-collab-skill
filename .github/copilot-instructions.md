@@ -19,7 +19,8 @@
 ```bash
 # Make up an AGENT NAME FIRST (ask the user for the role if not specified):
 .github/skills/agent-sync/scripts/register.sh "<agent-name>" "<role>"
-.github/skills/agent-sync/scripts/read.sh --wait --timeout 120
+.github/skills/agent-sync/scripts/read.sh --wait --timeout 120                         # legacy: single-consumer only (truncates log)
+.github/skills/agent-sync/scripts/read.sh --wait --agent "<your-agent-name>" --timeout 120  # GROUP CHAT: cursor-based, non-destructive (use this when 2+ agents share the log)
 .github/skills/agent-sync/scripts/read-direct.sh "<your-agent-name>" --timeout 120   # your own name (reads YOUR pipe)
 .github/skills/agent-sync/scripts/send.sh "<sender-name>" "<message>"                # your own name (who is sending)
 .github/skills/agent-sync/scripts/send-direct.sh "<sender-name>" "<receiver-name>" "<message>"

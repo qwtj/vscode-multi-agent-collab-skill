@@ -48,7 +48,7 @@ All runtime state lives under `tmp/agent-sync/` in the workspace root.
 | `unregister`  | `<agent-name>`               | Remove an agent from the registry.               |
 | `list`        | *(none)*              | List all currently registered agents.            |
 | `send`        | `<sender-name> <message>`    | Broadcast a message to `message.log`. First arg is **your own** agent name (the sender).       |
-| `read`        | `[--since N] [--wait] [--timeout N]` | Read messages from the log. `--wait` blocks until a new message arrives. `--timeout N` limits the wait. `--since N` shows last N lines (instant mode). |
+| `read`        | `[--since N] [--wait] [--timeout N] [--agent <name>]` | Read messages from the log. `--wait` blocks until a new message arrives. **`--agent <name>` is required for group chat** — uses a per-agent cursor so every agent sees every message without consuming/overwriting the log. `--timeout N` limits the wait. `--since N` shows last N lines (instant mode). |
 | `send-direct` | `<sender-name> <receiver-name> <msg>`   | Send a private message via named pipe to a specific agent. |
 | `read-direct` | `<your-agent-name> [--timeout N]` | **Blocks** until a direct message arrives on **your own** pipe. Pass your agent name so the script knows which pipe to read. `--timeout N` limits the wait (exits with "(no message)" on timeout). |
 
@@ -91,19 +91,48 @@ timestamped, structured log line to `tmp/agent-sync/message.log`.
 ## Reading broadcast messages
 
 ```bash
-.github/skills/agent-sync/scripts/read.sh                # all messages (instant)
-.github/skills/agent-sync/scripts/read.sh --since 10     # last 10 messages (instant)
-.github/skills/agent-sync/scripts/read.sh --wait           # BLOCK until a new message arrives
-.github/skills/agent-sync/scripts/read.sh --wait --timeout 120 # block up to 120s (default minimum)
+.github/skills/agent-sync/scripts/read.sh                          # all messages (instant)
+.github/skills/agent-sync/scripts/read.sh --since 10               # last 10 messages (instant)
+.github/skills/agent-sync/scripts/read.sh --wait --agent Alice     # GROUP CHAT: cursor-based, non-destructive
+.github/skills/agent-sync/scripts/read.sh --wait --agent Alice --timeout 120  # same + 120s cap
+.github/skills/agent-sync/scripts/read.sh --wait --timeout 120     # legacy consume mode (single reader only)
 ```
 
-> **Important:** Use `--wait` when the agent should pause and listen for
-> incoming broadcast messages. The script polls `message.log` every 0.5s and
-> prints only the **new** lines that appeared after the wait began.
+> **Important:** Always pass `--agent <your-name>` when multiple agents share the
+> broadcast log (group chat). This uses a per-agent cursor stored in
+> `tmp/agent-sync/cursors/<name>.pos` so **every agent independently sees every
+> message** and the log is never truncated.
+>
+> Without `--agent`, `--wait` mode truncates the entire log on read (legacy
+> work-queue behaviour). Using that with multiple concurrent agents causes
+> messages to be silently dropped and agents to hang indefinitely.
 >
 > **Default timeout rule:** Use `--timeout 120` (or higher) unless the user
 > explicitly asks for a shorter wait. Never use a timeout below 30 seconds
 > without explicit user instruction.
+
+## Group chat (4+ agents broadcasting to each other)
+
+> **Always use `--agent <your-name>` with `--wait`.**  Without it, the first
+> agent to poll will consume (truncate) the shared log and the other agents
+> will hang forever waiting for a message that is already gone.
+
+Pattern every agent should follow:
+
+```bash
+# 1. Send your message
+.github/skills/agent-sync/scripts/send.sh "Alice" "Hello team!"
+
+# 2. Wait for the NEXT message (cursor advances past your own send)
+.github/skills/agent-sync/scripts/read.sh --wait --agent Alice --timeout 120
+
+# 3. Act on received messages, then repeat
+```
+
+To avoid infinite reply loops between agents, each agent should:
+- **Only respond to messages directed at it** (e.g. contains its name or a specific keyword).
+- **Not respond to its own messages** (check `sender` field in the log line).
+- **Limit rounds** — keep track of how many times it has responded and stop after a set number.
 
 ## Direct messaging
 

@@ -55,8 +55,8 @@ if [[ ! -f "$DIRECT_LOG" ]]; then
 fi
 
 # --- blocking read: poll, consume atomically ---
-POLL_INTERVAL=0.5
-ELAPSED=0
+POLL_INTERVAL=1
+START_TIME=$(date +%s)
 
 while true; do
   # Acquire lock, read content, truncate, release — atomic consume
@@ -72,13 +72,13 @@ while true; do
 
   # Check timeout
   if [[ -n "$TIMEOUT" ]]; then
-    ELAPSED_INT=${ELAPSED%.*}
-    if [[ "${ELAPSED_INT:-0}" -ge "$TIMEOUT" ]]; then
+    NOW=$(date +%s)
+    ELAPSED=$(( NOW - START_TIME ))
+    if [[ "$ELAPSED" -ge "$TIMEOUT" ]]; then
       echo "(no message)"
       exit 0
     fi
   fi
 
   sleep "$POLL_INTERVAL"
-  ELAPSED=$(echo "$ELAPSED + $POLL_INTERVAL" | bc)
 done
