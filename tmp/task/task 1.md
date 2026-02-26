@@ -1,2 +1,0 @@
-- read https://code.visualstudio.com/docs/copilot/customization/overview
-- summarize and create a list then write out to ./<short name - task id>.md

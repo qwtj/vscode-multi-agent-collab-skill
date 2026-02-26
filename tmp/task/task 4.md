@@ -1,2 +1,0 @@
-- https://code.visualstudio.com/blogs/2025/07/17/copilot-coding-agent
-- summarize and create a list then write out to ./<short name - task id>.md
